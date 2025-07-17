@@ -128,3 +128,33 @@ model = VisionTransformer(
     IMAGE_SIZE,PATCH_SIZE,CHANNELS,NUM_CLASSES,EMBED_DIM, DEPTH, NUM_HEADS, MLP_DIM, DROP_RATE
 ).to(device)
 
+#Loss function and optimizer
+criterion = nn.CrossEntropyLoss() # Measure how wrong our model is
+optimizer = torch.optim.Adam(params = model.parameters(), # update model parameters to try and reduce loss
+                             lr = LEARNING_RATE)
+
+#training loop function
+def train(model,loader,optimizer, criterion):
+  # Set the mode of the model into training
+  model.train()
+  total_loss, correct = 0,0
+  #x is a batch of photos and y is batch of labels/targets
+  for x,y in loader:
+    #Moving(Sending) our data into the target device
+    x,y = x.to(device), y.to(device)
+    optimizer.zero_grad()
+    # 1. Forward Pass (model outputs raw logits)
+    out = model(x)
+    # 2. Calculate Loss (per batch)
+    loss = criterion(out,y)
+    # 3. Perform BackPropagation
+    loss.backward()
+    # 4. Perform Gradient Descent
+    optimizer.step()
+
+    total_loss += loss.item() * x.size(0)
+    correct +=(out.argmax(1) == y).sum().item()
+  # You have to scale the loss (normalization step to make the loss general across all batches)
+  return total_loss/len(loader.dataset), correct/len(loader.dataset)
+
+
