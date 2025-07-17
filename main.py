@@ -103,3 +103,28 @@ class MLP(nn.Module):
     x=self.dropout(F.gelu(self.fc1(x)))
     x=self.dropout(self.fc2(x))
     return x
+
+class VisionTransformer(nn.Module):
+  def __init__(self,img_size, patch_size, in_channels, num_classes, embed_dim,depth, num_heads, mlp_dim, drop_rate):
+    super().__init__()
+    self.patch_embed = PatchEmbedding(img_size, patch_size, in_channels, embed_dim)
+    self.encoder = nn.Sequential(
+    *[TransformerEncoderLayer(embed_dim, num_heads, mlp_dim, drop_rate) for _ in range(depth)]
+)
+
+    self.norm = nn.LayerNorm(embed_dim)
+    self.head = nn.Linear(embed_dim, num_classes)
+  
+  def forward(self,x):
+    x=self.patch_embed(x)
+    x = self.encoder(x)
+    x = self.norm(x)
+    cls_token = x[:,0]
+    return self.head(cls_token)
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+#Instantiate model
+model = VisionTransformer(
+    IMAGE_SIZE,PATCH_SIZE,CHANNELS,NUM_CLASSES,EMBED_DIM, DEPTH, NUM_HEADS, MLP_DIM, DROP_RATE
+).to(device)
+
